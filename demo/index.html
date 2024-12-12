@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Quill Uploader Module Demo</title>
+  <style>
+    body {
+      width: 1000px;
+      margin: 0 auto;
+    }
+
+    .editor-box {
+      height: 600px;
+      padding-top: 42px;
+      margin: 0 auto;
+    }
+
+    .editor-box .ql-toolbar {
+      margin-top: -42px;
+    }
+
+    .editor-box .ql-container {
+      overflow: hidden;
+    }
+
+    .editor-box .ql-editor img {
+      cursor: default !important;
+    }
+
+    .buttons {
+      margin: 1em 0 2em;
+    }
+
+    .btn {
+      padding: 3px .5em;
+    }
+
+    #result {
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Quill Uploader Module Demo</h1>
+  <div class="editor-box">
+    <div id="editor"></div>
+  </div>
+  <div class="buttons">
+    <button class="btn btn-html">getHtml</button>
+    <button class="btn btn-content">getContent</button>
+    <button class="btn btn-text">getText</button>
+    &nbsp;&nbsp;
+    <button class="btn btn-undo">undo</button>
+    <button class="btn btn-redo">redo</button>
+  </div>
+  <textarea id="result" rows="10"></textarea>
+</body>
+
+</html>

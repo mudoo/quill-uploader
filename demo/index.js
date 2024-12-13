@@ -121,3 +121,5 @@ document.querySelector('.btn-undo').addEventListener('click', function () {
 document.querySelector('.btn-redo').addEventListener('click', function () {
   demoEditor.history.redo()
 })
+
+window.editor = demoEditor

@@ -83,11 +83,14 @@ class CustomUploader {
     const i = range.index
     range.index++
 
+    this.quill.history.ignoreChange = true
     if (range.length) {
       this.quill.deleteText(i, range.length, 'api')
     }
 
-    return this.quill.insertEmbed(i, Loading.blotName, url, 'api')
+    const res = this.quill.insertEmbed(i, Loading.blotName, url, 'api')
+    this.quill.history.ignoreChange = false
+    return res
   }
 
   insertFilePlaceholder (range, file) {
@@ -182,7 +185,10 @@ class CustomUploader {
     let len = info.length
 
     // 删除占位符
-    this.quill.deleteText(info.index, len, 'user')
+    this.quill.history.ignoreChange = true
+    this.quill.deleteText(info.index, len, 'api')
+    this.quill.history.ignoreChange = false
+
     // 插入内容
     if (type === 'attachment') {
       len += res.name.length - 1
@@ -203,8 +209,10 @@ class CustomUploader {
   }
 
   removePlaceholder (res) {
+    this.quill.history.ignoreChange = true
     const info = this.getLoadingDomRange(res.key)
-    this.quill.deleteText(info.index, info.length, 'user')
+    this.quill.deleteText(info.index, info.length, 'api')
+    this.quill.history.ignoreChange = false
   }
 
   async uploadFiles (range, [...files]) {

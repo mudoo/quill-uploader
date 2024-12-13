@@ -6,7 +6,9 @@
 ## Usage
 ```javascript
 import Quill from 'quill'
-import CustomUploader from '../src/index'
+import 'quill/dist/quill.snow.css'
+
+import CustomUploader from 'quill-uploader'
 import attachmentIcon from 'quill/assets/icons/attachment.svg?raw'
 
 // replace iframe video to native video tag

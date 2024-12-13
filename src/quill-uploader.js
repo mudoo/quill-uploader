@@ -27,7 +27,7 @@ class CustomUploader {
   }
 
   static register () {
-    Quill.register(Loading)
+    Quill.register(Loading, true)
     Quill.register(CustomLink, true)
   }
 

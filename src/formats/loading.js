@@ -40,7 +40,7 @@ class Loading extends EmbedBlot {
   }
 
   static value () {
-    return null
+    return undefined
   }
 
   static register () {

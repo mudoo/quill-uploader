@@ -27,19 +27,23 @@ class CustomLink extends Link {
 
   static formats (domNode) {
     const res = { ...domNode.dataset }
-    if (res.url) {
+    if (!res.url) {
       res.url = domNode.getAttribute('href')
     }
     return res
   }
 
-  static value (domNode) {
-    return domNode.dataset.url || domNode.getAttribute('href')
-  }
-
   static register () {
     const Block = Quill.import('blots/block')
     Block.allowedChildren.push(CustomLink)
+  }
+
+  format (name, value) {
+    if (value && typeof value === 'object') {
+      super.format(name, value.url)
+    } else {
+      super.format(name, value)
+    }
   }
 }
 

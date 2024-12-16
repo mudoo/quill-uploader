@@ -53,53 +53,74 @@ const demoEditor = new Quill('#editor', {
         }
         return fileList
       }, */
-      // upload files
-      upload: async (_range, files) => {
-        const results = await uploadFiles(files)
 
-        return results.map(item => {
-          if (item.status === 'fulfilled') {
-            const file = item.value
-            // result to customUploader
-            return {
-              type: file.type,
-              name: file.name,
-              key: file.key,
-              url: file.url
-            }
-          } else {
-            return {
-              key: item.file?.key,
-              error: item.reason.message
-            }
-          }
-        })
-      }
+      // Wait for all files to be uploaded
+      // upload: uploadAllSettled,
+
+      // Callback after each file upload
+      upload: uploadCallback
     }
   }
 })
 
-// upload handler
-function uploadFiles (files) {
-  return Promise.allSettled(files.map((f, i) => waitUpload(f, i)))
+// wait for all files
+async function uploadAllSettled (_range, files) {
+  const results = await Promise.allSettled(files.map((f, i) => waitUpload(f, i)))
+
+  return results.map(item => {
+    if (item.status === 'fulfilled') {
+      return getFileResult(item.value)
+    } else {
+      return {
+        key: item.file?.key,
+        error: item.reason.message
+      }
+    }
+  })
+}
+
+// each file callback
+async function uploadCallback (_range, files, callback) {
+  await Promise.allSettled(files.map(async (f, i) => {
+    try {
+      const res = await waitUpload(f, i)
+      callback(null, getFileResult(res))
+    } catch (e) {
+      callback(e, f)
+    }
+  }))
 }
 
 function waitUpload (file, i) {
   return new Promise((resolve, reject) => {
+    const t = (i + 1) * 1000
+
     /* const type = file.type.split('/')[0]
     // reject attachment
     if (!['image', 'video'].includes(type)) {
-      const error = new Error('test error')
-      error.file = file
-      reject(error)
+      setTimeout(() => {
+        const error = new Error('test error')
+        error.file = file
+        reject(error)
+      }, t)
       return
     } */
 
     // resolve
-    const t = (Math.random() * 5 + 2) * 1000
+    // const t = (Math.random() * 5 + 2) * 1000
     file.url = URL.createObjectURL(file)
     setTimeout(() => resolve(file), t)
   })
+}
+
+// result to customUploader
+function getFileResult (file) {
+  return {
+    type: file.type,
+    name: file.name,
+    key: file.key,
+    url: file.url
+  }
 }
 
 // demo

@@ -36,9 +36,18 @@ new Quill('#editor', {
       }
     },
     customUploader: {
+      accepts: {
+        image: ['image/jpeg', 'image/png']
+      },
+      imagePreload: true, // Preload image when insert to editor after uploaded
+      focusOnDone: false,
+      handler: null,
       // upload
-      upload: async (_range, files) => {
+      upload: async (_range, files, callback) => {
         const results = await uploadFiles(files)
+
+        // each file callback
+        // callback(error?, fileResult)
 
         return results
       }

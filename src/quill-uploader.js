@@ -37,7 +37,9 @@ class CustomUploader {
     this.options = Object.assign({
       handler: null,
       upload: null,
-      accepts: this.constructor.Accepts
+      accepts: this.constructor.Accepts,
+      imagePreload: true,
+      focusOnDone: false
     }, options)
 
     // 更新uploader的mime配置，使其可以拖拽上传
@@ -153,7 +155,10 @@ class CustomUploader {
   }
 
   getLoadingDomRange (key) {
-    const blot = this.quill.constructor.find(this.quill.container.querySelector(`.ql-uploading[data-key="${key}"]`))
+    const loadingEl = this.quill.container.querySelector(`.ql-uploading[data-key="${key}"]`)
+    if (!loadingEl) return { index: 0, length: 0 }
+
+    const blot = this.quill.constructor.find(loadingEl)
     const index = this.quill.getIndex(blot)
     const delta = this.quill.getContents(index, 1)
     const lengthToDelete = this.calculatePlaceholderInsertLength(delta)
@@ -169,7 +174,7 @@ class CustomUploader {
   loadImage (res) {
     return new Promise((resolve) => {
       const info = this.getLoadingDomRange(res.key)
-      const img = info.blot.domNode.querySelector('img')
+      const img = info.blot?.domNode.querySelector('img')
       if (!img) {
         resolve(info)
         return
@@ -180,8 +185,15 @@ class CustomUploader {
     })
   }
 
-  insertToEditor (res, info = this.getLoadingDomRange(res.key)) {
+  async insertToEditor (res) {
     const type = this.constructor.findType(res.type)
+    const info = this.getLoadingDomRange(res.key)
+
+    // 图片等加载完之后再插入编辑器
+    if (type === 'image' && this.options.imagePreload) {
+      await this.loadImage(res)
+    }
+
     let len = info.length
 
     // 删除占位符
@@ -205,7 +217,10 @@ class CustomUploader {
       this.quill.insertEmbed(info.index, type, res.delta || res.url, 'user')
     }
 
-    this.quill.setSelection(info.index + len, 'user')
+    return {
+      ...info,
+      length: len
+    }
   }
 
   removePlaceholder (res) {
@@ -219,23 +234,42 @@ class CustomUploader {
     if (this.options.handler) files = await this.options.handler(files)
 
     await Promise.all(files.map((file) => this.insertFilePlaceholder(range, file)))
+    let lastRange
 
-    const results = await this.options.upload(range, files)
-
-    results.forEach(async (result) => {
-      if (result.url) {
-        const type = this.constructor.findType(result.type)
-        let loadingDomInfo
-        // 图片等加载完之后再插入编辑器
-        if (type === 'image') {
-          loadingDomInfo = await this.loadImage(result)
-        }
-
-        this.insertToEditor(result, loadingDomInfo)
+    const results = await this.options.upload(range, files, async (error, result) => {
+      if (!error) {
+        lastRange = await this.insertToEditor(result)
       } else {
         this.removePlaceholder(result)
       }
     })
+
+    if (!results) {
+      this.focusEditor(lastRange)
+      return
+    }
+
+    const count = results.length
+    let handledCount = 0
+    results.forEach(async (result) => {
+      if (result.url) {
+        lastRange = await this.insertToEditor(result)
+        if (handledCount === count - 1) {
+          this.focusEditor(lastRange)
+        }
+      } else {
+        this.removePlaceholder(result)
+      }
+      handledCount++
+    })
+  }
+
+  focusEditor (range) {
+    if (range && this.options.focusOnDone) {
+      // this.quill.focus()
+      this.quill.setSelection(range.index + range.length, 'user')
+      setTimeout(() => this.quill.focus(), 16)
+    }
   }
 }
 

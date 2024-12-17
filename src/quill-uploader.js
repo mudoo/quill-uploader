@@ -20,6 +20,11 @@ class CustomUploader {
     ]
   }
 
+  static Events = {
+    start: 'uploader-start',
+    done: 'uploader-done'
+  }
+
   static findType (mime, accepts = this.Accepts) {
     const types = Object.keys(accepts)
     if (types.includes(mime)) return mime
@@ -231,6 +236,7 @@ class CustomUploader {
   }
 
   async uploadFiles (range, [...files]) {
+    this.quill.emitter.emit(this.constructor.Events.start, files)
     if (this.options.handler) files = await this.options.handler(files)
 
     await Promise.all(files.map((file) => this.insertFilePlaceholder(range, file)))
@@ -245,31 +251,29 @@ class CustomUploader {
     })
 
     if (!results) {
-      this.focusEditor(lastRange)
+      this.done(lastRange, results)
       return
     }
 
-    const count = results.length
-    let handledCount = 0
-    results.forEach(async (result) => {
+    await Promise.allSettled(results.map(async (result) => {
       if (result.url) {
         lastRange = await this.insertToEditor(result)
-        if (handledCount === count - 1) {
-          this.focusEditor(lastRange)
-        }
       } else {
         this.removePlaceholder(result)
       }
-      handledCount++
-    })
+    }))
+
+    this.done(lastRange, results)
   }
 
-  focusEditor (range) {
+  done (range, results) {
     if (range && this.options.focusOnDone) {
       // this.quill.focus()
       this.quill.setSelection(range.index + range.length, 'user')
       setTimeout(() => this.quill.focus(), 16)
     }
+
+    this.quill.emitter.emit(this.constructor.Events.done, results)
   }
 }
 

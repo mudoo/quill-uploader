@@ -63,6 +63,14 @@ const demoEditor = new Quill('#editor', {
   }
 })
 
+// callback event
+demoEditor.on(CustomUploader.Events.start, files => {
+  console.log('upload-start', files)
+})
+demoEditor.on(CustomUploader.Events.done, results => {
+  console.log('upload-done', results)
+})
+
 // wait for all files
 async function uploadAllSettled (_range, files) {
   const results = await Promise.allSettled(files.map((f, i) => waitUpload(f, i)))

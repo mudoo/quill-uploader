@@ -192,13 +192,13 @@ class CustomUploader {
 
   async insertToEditor (res) {
     const type = this.constructor.findType(res.type)
-    const info = this.getLoadingDomRange(res.key)
 
     // 图片等加载完之后再插入编辑器
     if (type === 'image' && this.options.imagePreload) {
       await this.loadImage(res)
     }
 
+    const info = this.getLoadingDomRange(res.key)
     let len = info.length
 
     // 删除占位符
@@ -211,12 +211,12 @@ class CustomUploader {
       len += res.name.length - 1
       this.quill.insertText(info.index, res.name, {
         // link: res.url,
-        link: {
+        link: Object.assign({
           key: res.key,
           download: res.name,
           url: res.url,
           ext: res.name.slice(res.name.lastIndexOf('.') + 1)
-        }
+        }, res.delta)
       }, 'user')
     } else {
       this.quill.insertEmbed(info.index, type, res.delta || res.url, 'user')

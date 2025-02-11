@@ -1,6 +1,6 @@
 {
   "name": "quill-uploader",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Quill custom Uploader, supports images, videos, and attachments, with customizable loading indicators.",
   "main": "dist/uploader.js",
   "module": "src/quill-uploader.js",

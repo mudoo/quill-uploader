@@ -65,10 +65,10 @@ const demoEditor = new Quill('#editor', {
 
 // callback event
 demoEditor.on(CustomUploader.Events.start, files => {
-  console.log('upload-start', files)
+  console.warn('upload-start', files)
 })
 demoEditor.on(CustomUploader.Events.done, results => {
-  console.log('upload-done', results)
+  console.warn('upload-done', results)
 })
 
 // wait for all files
@@ -135,7 +135,7 @@ function getFileResult (file) {
 const $result = document.querySelector('#result')
 $result.value = `Quill V${Quill.version}`
 document.querySelector('.btn-html').addEventListener('click', function () {
-  $result.value = demoEditor.root.innerHTML
+  $result.value = demoEditor.getSemanticHTML()
 })
 document.querySelector('.btn-content').addEventListener('click', function () {
   const result = demoEditor.getContents()

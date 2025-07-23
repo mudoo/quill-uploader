@@ -1,8 +1,8 @@
 import Loading from './formats/loading.js'
 import CustomLink from './formats/custom-link.js'
-import { fileToBase64, getVideoInfo, randomString } from './util.js'
+import { dataURLtoFile, fileToBase64, getVideoInfo, randomString } from './util.js'
 
-import _Quill from 'quill'
+import _Quill, { Delta } from 'quill'
 const Quill = window.Quill || _Quill
 
 class CustomUploader {
@@ -62,6 +62,51 @@ class CustomUploader {
         toolbar.addHandler(key, () => this.pickFile(key))
       })
     }
+
+    this.clipboardInit()
+  }
+
+  clipboardInit () {
+    let pasteFiles = []
+    let pasteTimeout
+
+    const uploadPasteFiles = () => {
+      pasteFiles.forEach(file => {
+        const placeholder = this.getLoadingDomRange(file.name)
+        this.uploadFiles(placeholder, [file])
+      })
+      pasteFiles = []
+    }
+
+    const pasteUploadHandler = (file) => {
+      pasteFiles.push(file)
+
+      clearTimeout(pasteTimeout)
+      pasteTimeout = setTimeout(uploadPasteFiles, 100)
+    }
+
+    // 粘贴base64图片
+    this.quill.clipboard.addMatcher(Node.ELEMENT_NODE, (node, delta) => {
+      const tag = node.tagName.toLowerCase()
+
+      // 上传base64图片
+      if (tag === 'img' && node.src.startsWith('data:')) {
+        const imgFile = dataURLtoFile(node.src, '')
+        imgFile.base64 = node.src
+
+        const placeholder = new Delta().insert({
+          [Loading.blotName]: {
+            name: imgFile.name,
+            url: imgFile.base64,
+            key: imgFile.name
+          }
+        })
+        pasteUploadHandler(imgFile)
+
+        return placeholder
+      }
+      return delta
+    })
   }
 
   pickFile (type) {
@@ -104,6 +149,9 @@ class CustomUploader {
     const type = this.constructor.findType(file.type)
     if (!file.key) file.key = randomString()
     const key = file.key
+
+    const placeholder = this.getLoadingDomRange(key)
+    if (placeholder.delta) return Promise.resolve(placeholder.delta)
 
     return new Promise((resolve) => {
       if (type === 'attachment') {

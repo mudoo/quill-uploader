@@ -107,3 +107,35 @@ export function captureVideo (video, opts) {
 
   return cvs.toDataURL(opts.type, opts.quality)
 }
+
+/**
+ * 将base64转换为file文件
+ *
+ * @export
+ * @param {String} dataUrl base64图片
+ * @param {String} filename 生成文件名，默认随机
+ * @returns {File} 文件对象
+ */
+export function dataURLtoFile (dataUrl, filename) {
+  const arr = dataUrl.split(',')
+  const mime = arr[0].match(/:(.*?);/)[1]
+  const bstr = atob(arr[1])
+  let n = bstr.length
+  const u8arr = new Uint8Array(n)
+
+  if (!filename) {
+    const ext = mime.split('/')[1].replace('jpeg', 'jpg')
+    filename =
+      Math.random()
+        .toString()
+        .substr(3) +
+      '.' +
+      ext
+  }
+
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n)
+  }
+
+  return new File([u8arr], filename, { type: mime })
+}

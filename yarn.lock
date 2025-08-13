@@ -5977,10 +5977,10 @@ quill-delta@^5.1.0:
     lodash.clonedeep "^4.5.0"
     lodash.isequal "^4.5.0"
 
-quill-formats-video@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/quill-formats-video/-/quill-formats-video-1.0.0.tgz#b7f84830aee572a5f1771e406685af7bb1b4080e"
-  integrity sha512-h2wvXSDJsepewvNxeRBpvrJDYtxRyvPpiJkX1NDi6lqF9ThivD05b6tGlz+HHNuID0vrPF3AEe3QHmpHEkuaIg==
+quill-formats-video@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/quill-formats-video/-/quill-formats-video-1.0.1.tgz#aefc3283ae1c4dbcd21e7b4c38505d3c79056324"
+  integrity sha512-O6ZzWoKdiY4CucQU+gdjheb8gNdGIlvNBGhj6fD/Htb+dP7zXDsgVHtLHqYM26YCz1mlUFThyIRPtoY2UPnzvw==
 
 quill@^2.0.0:
   version "2.0.3"

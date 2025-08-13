@@ -16,7 +16,7 @@ class CustomUploader {
       'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'application/zip', 'application/vnd.rar', 'application/x-7z-compressed'
+      'application/zip', 'application/x-zip-compressed', 'application/vnd.rar', 'application/x-7z-compressed'
     ]
   }
 

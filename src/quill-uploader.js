@@ -284,8 +284,11 @@ class CustomUploader {
   }
 
   async uploadFiles (range, [...files]) {
-    this.quill.emitter.emit(this.constructor.Events.start, files)
     if (this.options.handler) files = await this.options.handler(files)
+    files = files.filter(f => f && f.size > 0)
+    if (!files.length) return
+
+    this.quill.emitter.emit(this.constructor.Events.start, files)
 
     await Promise.all(files.map((file) => this.insertFilePlaceholder(range, file)))
     let lastRange

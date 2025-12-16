@@ -209,7 +209,7 @@ class CustomUploader {
 
   getLoadingDomRange (key) {
     const loadingEl = this.quill.container.querySelector(`.ql-uploading[data-key="${key}"]`)
-    if (!loadingEl) return { index: 0, length: 0 }
+    if (!loadingEl) return this.quill.getSelection() || { index: 0, length: 0 }
 
     const blot = this.quill.constructor.find(loadingEl)
     const index = this.quill.getIndex(blot)

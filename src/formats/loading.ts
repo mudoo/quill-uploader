@@ -1,5 +1,5 @@
 import _Quill from 'quill'
-const Quill = window.Quill || _Quill
+const Quill = (window as any).Quill || _Quill
 
 const Image = Quill.import('formats/image')
 const EmbedBlot = Quill.import('blots/embed')
@@ -10,8 +10,8 @@ class Loading extends EmbedBlot {
   static tagName = 'span'
   static allowedChildren = [Image]
 
-  static create (value) {
-    const node = super.create(value)
+  static create(value: any) {
+    const node = super.create(value) as HTMLElement
     if (value === true) {
       return node
     } else if (typeof value === 'string') {
@@ -27,24 +27,24 @@ class Loading extends EmbedBlot {
       node.appendChild(image)
     }
 
-    const dataset = { ...value }
+    const dataset: any = { ...value }
     delete dataset.url
     Object.assign(node.dataset, dataset)
 
-    node.setAttribute('contenteditable', false)
+    node.setAttribute('contenteditable', 'false')
     return node
   }
 
-  static formats (domNode) {
+  static formats(domNode: HTMLElement) {
     return { ...domNode.dataset }
   }
 
-  static value () {
+  static value() {
     return undefined
   }
 
-  static register () {
-    const Block = Quill.import('blots/block')
+  static register() {
+    const Block = Quill.import('blots/block') as any
     Block.allowedChildren.push(Loading)
   }
 }

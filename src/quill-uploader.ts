@@ -1,14 +1,31 @@
-import Loading from './formats/loading.js'
-import CustomLink from './formats/custom-link.js'
-import { dataURLtoFile, fileToBase64, getVideoInfo, randomString } from './util.js'
+import Loading from './formats/loading'
+import CustomLink from './formats/custom-link'
+import { dataURLtoFile, fileToBase64, getVideoInfo, randomString } from './util'
 
-import _Quill, { Delta } from 'quill'
-const Quill = window.Quill || _Quill
+import _Quill, { Delta, Parchment, Range } from 'quill'
+const Quill = (window as any).Quill || _Quill
+
+type FileLike = File & { base64?: string; key?: string; thumb?: string }
+
+interface UploaderOptions {
+  handler?: (files: FileLike[]) => Promise<FileLike[]> | FileLike[]
+  upload: (range: Range, files: FileLike[], progress: (error: any, result: any) => void) => Promise<any[]>
+  accepts?: Record<string, string[]>
+  imagePreload?: boolean
+  focusOnDone?: boolean
+}
+
+type DomRange = Range & {
+    blot?: Parchment.Blot
+    delta?: Delta
+}
 
 class CustomUploader {
-  static DefaultFilePlaceholder = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAC0AQMAAADfKmdSAAAAA1BMVEX19fWwaZ+KAAAAHklEQVRYw+3BMQEAAADCIPuntsYOYAAAAAAAAABhBxzUAAEYBjd2AAAAAElFTkSuQmCC'
-  static DefaultAttachmentPlaceholder = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYAQMAAADaua+7AAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAAtJREFUCNdjoDEAAABgAAGVQESKAAAAAElFTkSuQmCC'
-  static Accepts = {
+  static DefaultFilePlaceholder =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAC0AQMAAADfKmdSAAAAA1BMVEX19fWwaZ+KAAAAHklEQVRYw+3BMQEAAADCIPuntsYOYAAAAAAAAABhBxzUAAEYBjd2AAAAAElFTkSuQmCC'
+  static DefaultAttachmentPlaceholder =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYAQMAAADaua+7AAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAAtJREFUCNdjoDEAAABgAAGVQESKAAAAAElFTkSuQmCC'
+  static Accepts: Record<string, string[]> = {
     image: ['image/jpeg', 'image/png', 'image/gif'],
     video: ['video/mp4'],
     attachment: [
@@ -25,40 +42,50 @@ class CustomUploader {
     done: 'uploader-done'
   }
 
-  static findType (mime, accepts = this.Accepts) {
+  static findType(mime: string, accepts = CustomUploader.Accepts): string {
     const types = Object.keys(accepts)
     if (types.includes(mime)) return mime
-    return types.find(k => accepts[k].includes(mime)) || types[0]
+    return types.find((k) => accepts[k].includes(mime)) || 'attachment'
   }
 
-  static register () {
+  static register() {
     Quill.register(Loading, true)
     Quill.register(CustomLink, true)
   }
 
-  constructor (quill, options) {
+  quill: _Quill
+  options: UploaderOptions
+
+  constructor(quill: _Quill, options: UploaderOptions) {
     this.quill = quill
-    this.quill.customUploader = this
-    this.options = Object.assign({
-      handler: null,
-      upload: null,
-      accepts: this.constructor.Accepts,
-      imagePreload: true,
-      focusOnDone: false
-    }, options)
+    ;(this.quill as any).customUploader = this
+    this.options = Object.assign(
+      {
+        handler: null,
+        upload: null,
+        accepts: (this.constructor as typeof CustomUploader).Accepts,
+        imagePreload: true,
+        focusOnDone: false
+      },
+      options
+    )
 
     // 更新uploader的mime配置，使其可以拖拽上传
-    const mimes = Object.keys(this.options.accepts).reduce((mimes, key) => mimes.concat(this.options.accepts[key]), [])
-    this.quill.uploader.options.mimetypes = mimes
+    const mimes = Object.keys(this.options.accepts || {}).reduce((m: string[], key) => m.concat(this.options.accepts![key]), [])
+    // @ts-ignore
+    if (this.quill.uploader && this.quill.uploader.options) {
+      // @ts-ignore
+      this.quill.uploader.options.mimetypes = mimes
+    }
 
     if (typeof this.options.upload !== 'function') {
       // eslint-disable-next-line no-console
       console.error('[Missing config] upload function that returns a promise is required')
     }
 
-    const toolbar = this.quill.getModule('toolbar')
+    const toolbar: any = this.quill.getModule('toolbar')
     if (toolbar) {
-      Object.keys(this.options.accepts).forEach(key => {
+      Object.keys(this.options.accepts || {}).forEach((key) => {
         toolbar.addHandler(key, () => this.pickFile(key))
       })
     }
@@ -66,33 +93,34 @@ class CustomUploader {
     this.clipboardInit()
   }
 
-  clipboardInit () {
-    let pasteFiles = []
-    let pasteTimeout
+  clipboardInit() {
+    let pasteFiles: FileLike[] = []
+    let pasteTimeout: number | undefined
 
     const uploadPasteFiles = () => {
-      pasteFiles.forEach(file => {
-        const placeholder = this.getLoadingDomRange(file.name)
-        this.uploadFiles(placeholder, [file])
+      pasteFiles.forEach((file) => {
+        const placeholderRange = this.getLoadingDomRange(file.name)
+        this.uploadFiles(placeholderRange, [file as File])
       })
       pasteFiles = []
     }
 
-    const pasteUploadHandler = (file) => {
+    const pasteUploadHandler = (file: FileLike) => {
       pasteFiles.push(file)
 
-      clearTimeout(pasteTimeout)
-      pasteTimeout = setTimeout(uploadPasteFiles, 100)
+      if (pasteTimeout) window.clearTimeout(pasteTimeout)
+      pasteTimeout = window.setTimeout(uploadPasteFiles, 100)
     }
 
     // 粘贴base64图片
-    this.quill.clipboard.addMatcher(Node.ELEMENT_NODE, (node, delta) => {
-      const tag = node.tagName.toLowerCase()
+    this.quill.clipboard.addMatcher(Node.ELEMENT_NODE, (node: Node, delta: Delta) => {
+
+      const tag = node.nodeName.toLowerCase()
 
       // 上传base64图片
-      if (tag === 'img' && node.src.startsWith('data:')) {
-        const imgFile = dataURLtoFile(node.src, '')
-        imgFile.base64 = node.src
+      if (tag === 'img' && (node as HTMLImageElement).src.startsWith('data:')) {
+        const imgFile = dataURLtoFile((node as HTMLImageElement).src, '') as FileLike
+        imgFile.base64 = (node as HTMLImageElement).src
 
         const placeholder = new Delta().insert({
           [Loading.blotName]: {
@@ -109,8 +137,8 @@ class CustomUploader {
     })
   }
 
-  pickFile (type) {
-    let fileInput = this.quill.container.querySelector('input.ql-uploader[type=file]')
+  pickFile(type: string) {
+    let fileInput: HTMLInputElement | null = this.quill.container.querySelector('input.ql-uploader[type=file]')
 
     if (fileInput == null) {
       fileInput = document.createElement('input')
@@ -119,19 +147,20 @@ class CustomUploader {
       fileInput.setAttribute('style', 'visibility:hidden')
       fileInput.addEventListener('change', () => {
         const range = this.quill.getSelection(true)
-        this.uploadFiles(range, fileInput.files)
-        fileInput.value = ''
+        const files = fileInput!.files
+        if (files == null || files.length === 0) return
+        this.uploadFiles(range, files)
+        fileInput!.value = ''
       })
       this.quill.container.appendChild(fileInput)
     }
 
-    const accept =
-      (this.options.accepts[type] || this.options.accepts.image)?.join(', ') || 'image/*'
+    const accept = (this.options.accepts && this.options.accepts[type])?.join(', ') || 'image/*'
     fileInput.setAttribute('accept', accept)
     fileInput.click()
   }
 
-  insertPlaceholder (range, url) {
+  insertPlaceholder(range: DomRange, url: any) {
     const i = range.index
     range.index++
 
@@ -145,8 +174,8 @@ class CustomUploader {
     return res
   }
 
-  insertFilePlaceholder (range, file) {
-    const type = this.constructor.findType(file.type)
+  insertFilePlaceholder(range: DomRange, file: FileLike) {
+    const type = (this.constructor as typeof CustomUploader).findType(file.type)
     if (!file.key) file.key = randomString()
     const key = file.key
 
@@ -158,7 +187,7 @@ class CustomUploader {
         // 附件，直接插入文本
         resolve(this.insertPlaceholder(range, {
           label: file.name,
-          url: this.constructor.DefaultAttachmentPlaceholder,
+          url: (this.constructor as typeof CustomUploader).DefaultAttachmentPlaceholder,
           key
         }))
       } else if (file.thumb || file.base64) {
@@ -170,28 +199,26 @@ class CustomUploader {
         }))
       } else if (this.options.accepts?.image?.includes(file.type)) {
         // 图片，读取自身base64显示
-        fileToBase64(file)
-          .then(base64 => {
-            resolve(this.insertPlaceholder(range, {
-              name: file.name,
-              url: base64,
-              key
-            }))
-          })
+        fileToBase64(file as File).then((base64) => {
+          resolve(this.insertPlaceholder(range, {
+            name: file.name,
+            url: base64,
+            key
+          }))
+        })
       } else if (this.options.accepts?.video?.includes(file.type)) {
         // 读取视频信息
-        getVideoInfo(file)
-          .then(videoInfo => {
-            resolve(this.insertPlaceholder(range, {
-              name: file.name,
-              url: videoInfo.thumb,
-              key
-            }))
-          })
+        getVideoInfo(file as File).then((videoInfo) => {
+          resolve(this.insertPlaceholder(range, {
+            name: file.name,
+            url: videoInfo.thumb,
+            key
+          }))
+        })
       } else {
         // 其他文件，插入默认占位符
         resolve(this.insertPlaceholder(range, {
-          url: this.constructor.DefaultFilePlaceholder,
+          url: (this.constructor as typeof CustomUploader).DefaultFilePlaceholder,
           key
         }))
       }
@@ -199,19 +226,23 @@ class CustomUploader {
   }
 
   // The length of the insert delta from insertBase64Image can vary depending on what part of the line the insert occurs
-  calculatePlaceholderInsertLength (delta) {
-    return delta.ops.reduce((accumulator, deltaOperation) => {
+  calculatePlaceholderInsertLength(delta: any) {
+    return delta.ops.reduce((accumulator: number, deltaOperation: any) => {
       if (Object.prototype.hasOwnProperty.call(deltaOperation, 'insert')) accumulator++
 
       return accumulator
     }, 0)
   }
 
-  getLoadingDomRange (key) {
+  getLoadingDomRange(key: string): DomRange {
     const loadingEl = this.quill.container.querySelector(`.ql-uploading[data-key="${key}"]`)
-    if (!loadingEl) return this.quill.getSelection() || { index: 0, length: 0 }
+    if (!loadingEl) return {
+      index: 0,
+      length: 0,
+      ...this.quill.getSelection()
+    }
 
-    const blot = this.quill.constructor.find(loadingEl)
+    const blot = Quill.find(loadingEl)
     const index = this.quill.getIndex(blot)
     const delta = this.quill.getContents(index, 1)
     const lengthToDelete = this.calculatePlaceholderInsertLength(delta)
@@ -224,10 +255,10 @@ class CustomUploader {
     }
   }
 
-  loadImage (res) {
+  loadImage(res: any) {
     return new Promise((resolve) => {
       const info = this.getLoadingDomRange(res.key)
-      const img = info.blot?.domNode.querySelector('img')
+      const img = (info.blot?.domNode as HTMLElement).querySelector('img')
       if (!img) {
         resolve(info)
         return
@@ -238,8 +269,8 @@ class CustomUploader {
     })
   }
 
-  async insertToEditor (res) {
-    const type = this.constructor.findType(res.type)
+  async insertToEditor(res: any) {
+    const type = (this.constructor as typeof CustomUploader).findType(res.type)
 
     // 图片等加载完之后再插入编辑器
     if (type === 'image' && this.options.imagePreload) {
@@ -256,9 +287,8 @@ class CustomUploader {
 
     // 插入内容
     if (type === 'attachment') {
-      len += res.name.length - 1
+      len = res.name.length + 1
       this.quill.insertText(info.index, res.name, {
-        // link: res.url,
         link: Object.assign({
           key: res.key,
           download: res.name,
@@ -266,9 +296,11 @@ class CustomUploader {
           ext: res.name.slice(res.name.lastIndexOf('.') + 1)
         }, res.delta)
       }, 'user')
+      this.quill.insertText(info.index + len - 1, ' ', { link: null }, 'user')
     } else {
       this.quill.insertEmbed(info.index, type, res.delta || res.url, 'user')
     }
+    this.quill.setSelection(info.index + len, 'silent')
 
     return {
       ...info,
@@ -276,24 +308,25 @@ class CustomUploader {
     }
   }
 
-  removePlaceholder (res) {
+  removePlaceholder(res: any) {
     this.quill.history.ignoreChange = true
     const info = this.getLoadingDomRange(res.key)
     this.quill.deleteText(info.index, info.length, 'api')
     this.quill.history.ignoreChange = false
   }
 
-  async uploadFiles (range, [...files]) {
+  async uploadFiles(range: DomRange, filesArg: FileList | File[]) {
+    let files = Array.from(filesArg)
     if (this.options.handler) files = await this.options.handler(files)
-    files = files.filter(f => f && f.size > 0)
+    files = files.filter((f) => f && f.size > 0)
     if (!files.length) return
 
-    this.quill.emitter.emit(this.constructor.Events.start, files)
+    this.quill.emitter.emit((this.constructor as typeof CustomUploader).Events.start, files)
 
     await Promise.all(files.map((file) => this.insertFilePlaceholder(range, file)))
-    let lastRange
+    let lastRange: any
 
-    const results = await this.options.upload(range, files, async (error, result) => {
+    const results = await this.options.upload(range, files, async (error: any, result: any) => {
       if (!error) {
         lastRange = await this.insertToEditor(result)
       } else {
@@ -306,7 +339,7 @@ class CustomUploader {
       return
     }
 
-    await Promise.allSettled(results.map(async (result) => {
+    await Promise.allSettled(results.map(async (result: any) => {
       if (result.url) {
         lastRange = await this.insertToEditor(result)
       } else {
@@ -317,19 +350,18 @@ class CustomUploader {
     this.done(lastRange, results)
   }
 
-  done (range, results) {
+  done(range: any, results: any) {
     if (range && this.options.focusOnDone) {
-      // this.quill.focus()
       this.quill.setSelection(range.index + range.length, 'user')
       setTimeout(() => this.quill.focus(), 16)
     }
 
-    this.quill.emitter.emit(this.constructor.Events.done, results)
+    this.quill.emitter.emit((this.constructor as typeof CustomUploader).Events.done, results)
   }
 }
 
 export default CustomUploader
 
-if (window.Quill) {
-  window.Quill.register('modules/customUploader', CustomUploader)
+if ((window as any).Quill) {
+  ;(window as any).Quill.register('modules/customUploader', CustomUploader)
 }

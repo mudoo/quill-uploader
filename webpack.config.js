@@ -43,11 +43,19 @@ const config = {
     // Add your plugins here
     // Learn more about plugins from https://webpack.js.org/configuration/plugins/
   ],
+  resolve: {
+    extensions: ['.ts', '.js']
+  },
   module: {
     rules: [
       {
         test: /\.(js|jsx)$/i,
         loader: 'babel-loader'
+      },
+      {
+        test: /\.(ts|tsx)$/i,
+        loader: 'ts-loader',
+        exclude: /node_modules/
       },
       {
         test: /\.css$/i,
@@ -77,7 +85,7 @@ module.exports = () => {
     Object.assign(config, {
       mode: 'production',
       entry: {
-        uploader: './src/index.js'
+        uploader: './src/index'
       },
       // 发布排除quill库
       externals: {

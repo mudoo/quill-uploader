@@ -1,20 +1,17 @@
 import _Quill from 'quill'
-const Quill = window.Quill || _Quill
+const Quill = (window as any).Quill || _Quill
 
 const Link = Quill.import('formats/link')
 
 class CustomLink extends Link {
-  // NOTE: 独立blot会导致链接编辑异常，tooltip保存之后，会在外部再包裹一层link
-  // static blotName = 'attachment'
-  // static className = 'ql-attachment'
-  static create (value) {
+  static create (value: any) {
     if (typeof value === 'string') {
       value = {
         url: value
       }
     }
 
-    const node = super.create(value.url)
+    const node = super.create(value.url) as HTMLElement
     if (value.download) {
       node.setAttribute('download', value.download)
       delete value.download
@@ -25,8 +22,8 @@ class CustomLink extends Link {
     return node
   }
 
-  static formats (domNode) {
-    const res = { ...domNode.dataset }
+  static formats (domNode: HTMLElement) {
+    const res: any = { ...domNode.dataset }
     if (!res.url) {
       res.url = domNode.getAttribute('href')
     }
@@ -38,7 +35,7 @@ class CustomLink extends Link {
     Block.allowedChildren.push(CustomLink)
   }
 
-  format (name, value) {
+  format (name: string, value: any) {
     if (value && typeof value === 'object') {
       super.format(name, value.url)
     } else {

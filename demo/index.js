@@ -150,5 +150,13 @@ document.querySelector('.btn-undo').addEventListener('click', function () {
 document.querySelector('.btn-redo').addEventListener('click', function () {
   demoEditor.history.redo()
 })
+document.querySelector('.btn-insert').addEventListener('click', function () {
+  demoEditor.customUploader.insertToEditor({
+    key: String(Math.random()),
+    type: 'text/plain',
+    name: String(Math.random()),
+    url: `http://test.com/${Math.random()}`
+  })
+})
 
 window.editor = demoEditor

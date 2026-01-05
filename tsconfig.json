@@ -1,23 +1,28 @@
 {
-  "include": ["src/**/*"],
   "compilerOptions": {
-    "target": "ES2016",
+    "target": "ES2015",
     "module": "ESNext",
+    "lib": ["ES2015", "DOM"],
     "moduleResolution": "node",
-    "strict": true,
-    "lib": ["ESNext", "DOM"],
-    "skipLibCheck": true,
-    "allowJs": true,
-    "declaration": true,
-    "emitDeclarationOnly": false,
-    "declarationMap": false,
-    "rootDir": "src",
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
-    "outDir": "./es",
-    "paths": {
-      "*": ["node_modules/*"]
-    }
-  }
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "allowJs": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "demo"
+  ]
 }

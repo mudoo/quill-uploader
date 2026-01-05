@@ -43,18 +43,21 @@ const config = {
     // Add your plugins here
     // Learn more about plugins from https://webpack.js.org/configuration/plugins/
   ],
-  resolve: {
-    extensions: ['.ts', '.js']
-  },
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/i,
-        loader: 'babel-loader'
-      },
-      {
         test: /\.(ts|tsx)$/i,
         loader: 'ts-loader',
+        exclude: /node_modules/,
+        options: isProduction
+          ? {}
+          : {
+              configFile: 'tsconfig.dev.json'
+            }
+      },
+      {
+        test: /\.(js|jsx)$/i,
+        loader: 'babel-loader',
         exclude: /node_modules/
       },
       {
@@ -77,6 +80,17 @@ const config = {
       // Add your rules for custom modules here
       // Learn more about loaders from https://webpack.js.org/loaders/
     ]
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js', '.jsx']
+  },
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        extractComments: false // 不将注释提取到单独的文件中
+      })
+    ]
   }
 }
 
@@ -90,21 +104,13 @@ module.exports = () => {
       // 发布排除quill库
       externals: {
         quill: 'Quill'
-      },
-      optimization: {
-        minimize: true,
-        minimizer: [
-          new TerserPlugin({
-            extractComments: false // 不将注释提取到单独的文件中
-          })
-        ]
       }
     })
   } else {
     Object.assign(config, {
       mode: 'development',
       entry: {
-        index: './demo/index.js'
+        index: './demo/index.ts'
       },
       devtool: 'source-map'
     })

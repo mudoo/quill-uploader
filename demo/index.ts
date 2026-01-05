@@ -11,15 +11,15 @@ import Video from 'quill-formats-video'
 Quill.register(Video, true)
 Quill.register('modules/customUploader', CustomUploader)
 
-const Icons = Quill.import('ui/icons')
+const Icons = Quill.import('ui/icons') as Record<string, string>
 Icons.attachment = attachmentIcon
 
 // support blob protocol for demo
 Video.PROTOCOL_WHITELIST.push('blob')
-const Link = Quill.import('formats/link')
+const Link = Quill.import('formats/link') as any
 Link.PROTOCOL_WHITELIST.push('blob')
-const Image = Quill.import('formats/image')
-Image.sanitize = url => url
+const Image = Quill.import('formats/image') as any
+Image.sanitize = (url: string) => url
 
 const demoEditor = new Quill('#editor', {
   theme: 'snow',
@@ -37,7 +37,7 @@ const demoEditor = new Quill('#editor', {
     },
     uploader: {
       // call customUploader
-      handler (range, files) {
+      handler (this: any, range: any, files: File[]) {
         return this.quill.customUploader?.uploadFiles(range, files)
       }
     },
@@ -64,18 +64,35 @@ const demoEditor = new Quill('#editor', {
 })
 
 // callback event
-demoEditor.on(CustomUploader.Events.start, files => {
+demoEditor.on(CustomUploader.Events.start, (files: File[]) => {
   console.warn('upload-start', files)
 })
-demoEditor.on(CustomUploader.Events.done, results => {
+demoEditor.on(CustomUploader.Events.done, (results: any[]) => {
   console.warn('upload-done', results)
 })
 
+interface FileResult {
+  type: string
+  name: string
+  key: string
+  url: string
+}
+
+interface FileWithUrl extends File {
+  url?: string
+  key?: string
+}
+
+interface ErrorResult {
+  key?: string
+  error: string
+}
+
 // wait for all files
-async function uploadAllSettled (_range, files) {
+async function uploadAllSettled (_range: any, files: FileWithUrl[]): Promise<Array<FileResult | ErrorResult>> {
   const results = await Promise.allSettled(files.map((f, i) => waitUpload(f, i)))
 
-  return results.map(item => {
+  return results.map((item: any) => {
     if (item.status === 'fulfilled') {
       return getFileResult(item.value)
     } else {
@@ -88,18 +105,18 @@ async function uploadAllSettled (_range, files) {
 }
 
 // each file callback
-async function uploadCallback (_range, files, callback) {
+async function uploadCallback (_range: any, files: FileWithUrl[], callback: (error: Error | null, result: FileWithUrl | FileResult) => void): Promise<void> {
   await Promise.allSettled(files.map(async (f, i) => {
     try {
       const res = await waitUpload(f, i)
       callback(null, getFileResult(res))
     } catch (e) {
-      callback(e, f)
+      callback(e as Error, f)
     }
   }))
 }
 
-function waitUpload (file, i) {
+function waitUpload (file: FileWithUrl, i: number): Promise<FileWithUrl> {
   return new Promise((resolve, reject) => {
     const t = (i + 1) * 1000
 
@@ -122,36 +139,37 @@ function waitUpload (file, i) {
 }
 
 // result to customUploader
-function getFileResult (file) {
+function getFileResult (file: FileWithUrl): FileResult {
   return {
     type: file.type,
     name: file.name,
-    key: file.key,
-    url: file.url
+    key: file.key || '',
+    url: file.url || ''
   }
 }
 
 // demo
-const $result = document.querySelector('#result')
+const $result = document.querySelector<HTMLTextAreaElement>('#result')!
 $result.value = `Quill V${Quill.version}`
-document.querySelector('.btn-html').addEventListener('click', function () {
+
+document.querySelector('.btn-html')!.addEventListener('click', function () {
   $result.value = demoEditor.getSemanticHTML()
 })
-document.querySelector('.btn-content').addEventListener('click', function () {
+document.querySelector('.btn-content')!.addEventListener('click', function () {
   const result = demoEditor.getContents()
   $result.value = JSON.stringify(result)
 })
-document.querySelector('.btn-text').addEventListener('click', function () {
+document.querySelector('.btn-text')!.addEventListener('click', function () {
   $result.value = demoEditor.getText()
 })
-document.querySelector('.btn-undo').addEventListener('click', function () {
+document.querySelector('.btn-undo')!.addEventListener('click', function () {
   demoEditor.history.undo()
 })
-document.querySelector('.btn-redo').addEventListener('click', function () {
+document.querySelector('.btn-redo')!.addEventListener('click', function () {
   demoEditor.history.redo()
 })
-document.querySelector('.btn-insert').addEventListener('click', function () {
-  demoEditor.customUploader.insertToEditor({
+document.querySelector('.btn-insert')!.addEventListener('click', function () {
+  (demoEditor as any).customUploader.insertToEditor({
     key: String(Math.random()),
     type: 'text/plain',
     name: String(Math.random()),
@@ -159,4 +177,4 @@ document.querySelector('.btn-insert').addEventListener('click', function () {
   })
 })
 
-window.editor = demoEditor
+;(window as any).editor = demoEditor

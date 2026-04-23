@@ -9,7 +9,9 @@
     "dev": "webpack serve",
     "serve": "webpack serve",
     "watch": "webpack --watch",
-    "build": "webpack --mode=production --node-env=production",
+    "build": "npm run build:umd && npm run build:es",
+    "build:es": "tsc && node build/copy.js",
+    "build:umd": "webpack --mode=production --node-env=production",
     "build:dev": "webpack --mode=development",
     "prepublish": "npm run build"
   },

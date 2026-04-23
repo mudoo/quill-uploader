@@ -1,3 +1,5 @@
+import type { VideoCaptureOptions, VideoInfo } from './types'
+
 /**
  * 生成一个精炼的随机字符串
  * @param {number} length - 生成字符串的长度
@@ -29,19 +31,6 @@ export function fileToBase64(file: File): Promise<string> {
     }
     reader.readAsDataURL(file)
   })
-}
-
-export interface VideoCaptureOptions {
-  time?: number
-  quality?: number
-  type?: string
-}
-
-export interface VideoInfo {
-  thumb: string
-  duration: number
-  width: number
-  height: number
 }
 
 /**

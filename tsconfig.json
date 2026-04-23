@@ -18,7 +18,8 @@
     "allowJs": true
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "*.d.ts"
   ],
   "exclude": [
     "node_modules",

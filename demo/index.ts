@@ -8,7 +8,7 @@ import attachmentIcon from 'quill/assets/icons/attachment.svg?raw'
 import Video from 'quill-formats-video'
 // import { randomString } from '../src/util.js'
 
-Quill.register(Video, true)
+Quill.register('formats/video', Video, true)
 Quill.register('modules/customUploader', CustomUploader)
 
 const Icons = Quill.import('ui/icons') as Record<string, string>

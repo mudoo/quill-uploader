@@ -1,24 +1,10 @@
 import Loading from './formats/loading'
 import CustomLink from './formats/custom-link'
 import { dataURLtoFile, fileToBase64, getVideoInfo, randomString } from './util'
+import type { FileLike, UploaderOptions, DomRange } from './types'
 
-import _Quill, { Delta, Parchment, Range } from 'quill'
+import _Quill, { Delta, Range } from 'quill'
 const Quill = (window as any).Quill || _Quill
-
-type FileLike = File & { base64?: string; key?: string; thumb?: string }
-
-interface UploaderOptions {
-  handler?: (files: FileLike[]) => Promise<FileLike[]> | FileLike[]
-  upload: (range: Range, files: FileLike[], progress: (error: any, result: any) => void) => Promise<any[]>
-  accepts?: Record<string, string[]>
-  imagePreload?: boolean
-  focusOnDone?: boolean
-}
-
-type DomRange = Range & {
-    blot?: Parchment.Blot
-    delta?: Delta
-}
 
 class CustomUploader {
   static DefaultFilePlaceholder =

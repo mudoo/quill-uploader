@@ -7,7 +7,8 @@
   },
   "include": [
     "src/**/*",
-    "demo/**/*"
+    "demo/**/*",
+    "*.d.ts"
   ],
   "exclude": [
     "node_modules",

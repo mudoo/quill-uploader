@@ -172,6 +172,7 @@ class CustomUploader {
       if (type === 'attachment') {
         // 附件，直接插入文本
         resolve(this.insertPlaceholder(range, {
+          type,
           label: file.name,
           url: (this.constructor as typeof CustomUploader).DefaultAttachmentPlaceholder,
           key
@@ -179,23 +180,26 @@ class CustomUploader {
       } else if (file.thumb || file.base64) {
         // 自定义处理的文件，thumb作为显示的缩略图
         resolve(this.insertPlaceholder(range, {
+          type,
           name: file.name,
           url: file.thumb || file.base64,
           key
         }))
-      } else if (this.options.accepts?.image?.includes(file.type)) {
+      } else if (type === 'image') {
         // 图片，读取自身base64显示
         fileToBase64(file as File).then((base64) => {
           resolve(this.insertPlaceholder(range, {
+            type,
             name: file.name,
             url: base64,
             key
           }))
         })
-      } else if (this.options.accepts?.video?.includes(file.type)) {
+      } else if (type === 'video') {
         // 读取视频信息
         getVideoInfo(file as File).then((videoInfo) => {
           resolve(this.insertPlaceholder(range, {
+            type,
             name: file.name,
             url: videoInfo.thumb,
             key
@@ -204,6 +208,7 @@ class CustomUploader {
       } else {
         // 其他文件，插入默认占位符
         resolve(this.insertPlaceholder(range, {
+          type,
           url: (this.constructor as typeof CustomUploader).DefaultFilePlaceholder,
           key
         }))

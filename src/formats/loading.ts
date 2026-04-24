@@ -24,6 +24,8 @@ class Loading extends EmbedBlot {
       const image = document.createElement('img')
       image.setAttribute('src', value.url)
       image.setAttribute('alt', value.label || value.name || '')
+      if (value.width) image.setAttribute('width', value.width)
+      if (value.height) image.setAttribute('height', value.height)
       node.appendChild(image)
     }
 
